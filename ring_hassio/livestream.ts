@@ -178,8 +178,12 @@ const initializeStream = async () => {
   if (!(await fsExists(publicOutputDirectory))) {
     await mkdir(publicOutputDirectory);
   }
+
   const sessions = {};
   for (const camera of cameras) {
+    console.log(
+      `camera device id: ${camera.data.device_id} | camera name: ${camera.name} | camera id: ${camera.data.id}`
+    );
     sessions[camera.data.id] = await startStream(camera);
   }
 };
