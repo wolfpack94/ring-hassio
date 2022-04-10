@@ -167,7 +167,7 @@ var startStream = function (camera) { return __awaiter(void 0, void 0, void 0, f
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
-                console.log(camera);
+                console.log("Before starting stream of " + camera.name);
                 return [4 /*yield*/, camera.streamVideo({
                         output: [
                             "-preset",
@@ -254,10 +254,11 @@ var initializeStream = function (cameras) { return __awaiter(void 0, void 0, voi
             case 1: return [4 /*yield*/, getRingClient().getCameras()];
             case 2:
                 cameras = _a.sent();
-                console.log(cameras);
+                console.log("Before initializing streams");
                 return [4 /*yield*/, initializeStream(cameras)];
             case 3:
                 _a.sent();
+                console.log("Before initializing server with: " + cameras.length + " cameras");
                 return [4 /*yield*/, startServer(cameras)];
             case 4:
                 _a.sent();

@@ -130,7 +130,7 @@ const startServer = async (cameras: RingCamera[]) => {
 };
 
 const startStream = async (camera: RingCamera): Promise<SipSession> => {
-  console.log(camera);
+  console.log(`Before starting stream of ${camera.name}`);
   const sipSession = await camera.streamVideo({
     output: [
       "-preset",
@@ -195,8 +195,9 @@ const initializeStream = async (cameras: RingCamera[]) => {
     process.exit();
   } else {
     const cameras = await getRingClient().getCameras();
-    console.log(cameras);
+    console.log("Before initializing streams");
     await initializeStream(cameras);
+    console.log(`Before initializing server with: ${cameras.length} cameras`);
     await startServer(cameras);
   }
 })();
