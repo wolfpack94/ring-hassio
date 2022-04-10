@@ -168,25 +168,27 @@ var startStream = function (camera) { return __awaiter(void 0, void 0, void 0, f
     var sipSession;
     return __generator(this, function (_a) {
         switch (_a.label) {
-            case 0: return [4 /*yield*/, camera.streamVideo({
-                    output: [
-                        "-preset",
-                        "veryfast",
-                        "-g",
-                        "25",
-                        "-sc_threshold",
-                        "0",
-                        "-f",
-                        "hls",
-                        "-hls_time",
-                        "2",
-                        "-hls_list_size",
-                        "6",
-                        "-hls_flags",
-                        "delete_segments",
-                        path.join(publicOutputDirectory, camera.data.id + ".m3u8"),
-                    ]
-                })];
+            case 0:
+                console.log(camera);
+                return [4 /*yield*/, camera.streamVideo({
+                        output: [
+                            "-preset",
+                            "veryfast",
+                            "-g",
+                            "25",
+                            "-sc_threshold",
+                            "0",
+                            "-f",
+                            "hls",
+                            "-hls_time",
+                            "2",
+                            "-hls_list_size",
+                            "6",
+                            "-hls_flags",
+                            "delete_segments",
+                            path.join(publicOutputDirectory, camera.data.id + ".m3u8"),
+                        ]
+                    })];
             case 1:
                 sipSession = _a.sent();
                 sipSession.onCallEnded.subscribe(function () {
@@ -208,41 +210,37 @@ var startStream = function (camera) { return __awaiter(void 0, void 0, void 0, f
         }
     });
 }); };
-var initializeStream = function () { return __awaiter(void 0, void 0, void 0, function () {
-    var ringApi, cameras, sessions, _i, cameras_1, camera, _a, _b;
+var initializeStream = function (cameras) { return __awaiter(void 0, void 0, void 0, function () {
+    var sessions, _i, cameras_1, camera, _a, _b;
     return __generator(this, function (_c) {
         switch (_c.label) {
             case 0:
-                ringApi = getRingClient();
-                return [4 /*yield*/, ringApi.getCameras()];
-            case 1:
-                cameras = _c.sent();
                 console.log("output directory: " + publicOutputDirectory);
                 return [4 /*yield*/, fsExists(publicOutputDirectory)];
-            case 2:
-                if (!!(_c.sent())) return [3 /*break*/, 4];
+            case 1:
+                if (!!(_c.sent())) return [3 /*break*/, 3];
                 return [4 /*yield*/, mkdir(publicOutputDirectory)];
-            case 3:
+            case 2:
                 _c.sent();
-                _c.label = 4;
-            case 4:
+                _c.label = 3;
+            case 3:
                 sessions = {};
                 _i = 0, cameras_1 = cameras;
-                _c.label = 5;
-            case 5:
-                if (!(_i < cameras_1.length)) return [3 /*break*/, 8];
+                _c.label = 4;
+            case 4:
+                if (!(_i < cameras_1.length)) return [3 /*break*/, 7];
                 camera = cameras_1[_i];
                 console.log("camera device id: " + camera.data.device_id + " | camera name: " + camera.name + " | camera id: " + camera.data.id);
                 _a = sessions;
                 _b = camera.data.id;
                 return [4 /*yield*/, startStream(camera)];
-            case 6:
+            case 5:
                 _a[_b] = _c.sent();
-                _c.label = 7;
-            case 7:
+                _c.label = 6;
+            case 6:
                 _i++;
-                return [3 /*break*/, 5];
-            case 8: return [2 /*return*/];
+                return [3 /*break*/, 4];
+            case 7: return [2 /*return*/];
         }
     });
 }); };
@@ -258,7 +256,8 @@ var initializeStream = function () { return __awaiter(void 0, void 0, void 0, fu
             case 1: return [4 /*yield*/, getRingClient().getCameras()];
             case 2:
                 cameras = _a.sent();
-                return [4 /*yield*/, initializeStream()];
+                console.log(cameras);
+                return [4 /*yield*/, initializeStream(cameras)];
             case 3:
                 _a.sent();
                 return [4 /*yield*/, startServer(cameras)];
