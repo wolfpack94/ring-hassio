@@ -64,86 +64,84 @@ var getRingClient = function () {
     return ringClient;
 };
 var startServer = function (cameras) { return __awaiter(void 0, void 0, void 0, function () {
-    var server;
     return __generator(this, function (_a) {
-        server = http.createServer(function (req, res) {
-            return __awaiter(this, void 0, void 0, function () {
-                var uri, filename, fileExists, stream;
-                return __generator(this, function (_a) {
-                    switch (_a.label) {
-                        case 0:
-                            uri = url.parse(req.url).pathname;
-                            console.log("requested uri: " + uri);
-                            // If Accessing The Main Page
-                            if (uri == "/index.html" || uri == "/") {
-                                res.writeHead(200, { "Content-Type": "text/html" });
-                                res.write("<html><head><title>Ring Livestream</title></head><body>");
-                                res.write("<h1>Welcome to your Ring Livestream!</h1>");
-                                res.write("<video width=\"352\" height=\"198\" controls autoplay src=\"public/stream.m3u8\"></video>");
-                                res.write("<br/>If you cannot see the video above open <a href=\"public/stream.m3u8\">the stream</a> in a player such as VLC.");
-                                res.write("<table><tr><th>Cameras</th><th>Camera Names</th></tr><tr>" + cameras.map(function (camera) { return "<td>" + camera.name + " | " + camera.data.id + "</td>"; }) + "</tr></table>");
-                                res.end();
-                                return [2 /*return*/];
-                            }
-                            filename = path.join("./", uri);
-                            console.log("mapped filename: " + filename);
-                            return [4 /*yield*/, fsExists(filename)];
-                        case 1:
-                            fileExists = _a.sent();
-                            if (!fileExists) {
-                                console.log("file not found: " + filename);
-                                res.writeHead(404, { "Content-Type": "text/plain" });
-                                res.write("file not found: " + filename + "%s\n");
-                                return [2 /*return*/, res.end()];
-                            }
-                            console.log("sending file: " + filename);
-                            switch (path.extname(uri)) {
-                                case ".m3u8":
-                                    fs.readFile(filename, function (err, contents) {
-                                        if (err) {
-                                            res.writeHead(500);
-                                            res.end();
-                                        }
-                                        else if (contents) {
-                                            res.writeHead(200, {
-                                                "Content-Type": "application/vnd.apple.mpegurl"
+        http
+            .createServer(function (req, res) { return __awaiter(void 0, void 0, void 0, function () {
+            var uri, filename, fileExists, stream;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        uri = url.parse(req.url).pathname;
+                        console.log("requested uri: " + uri);
+                        // If Accessing The Main Page
+                        if (uri == "/index.html" || uri == "/") {
+                            res.writeHead(200, { "Content-Type": "text/html" });
+                            res.write("<html><head><title>Ring Livestream</title></head><body>");
+                            res.write("<h1>Welcome to your Ring Livestream!</h1>");
+                            res.write("<video width=\"352\" height=\"198\" controls autoplay src=\"public/stream.m3u8\"></video>");
+                            res.write("<br/>If you cannot see the video above open <a href=\"public/stream.m3u8\">the stream</a> in a player such as VLC.");
+                            res.write("<table><tr><th>Cameras</th><th>Camera Names</th></tr><tr>" + cameras.map(function (camera) { return "<td>" + camera.name + " | " + camera.data.id + "</td>"; }) + "</tr></table>");
+                            res.end();
+                            return [2 /*return*/];
+                        }
+                        filename = path.join("./", uri);
+                        console.log("mapped filename: " + filename);
+                        return [4 /*yield*/, fsExists(filename)];
+                    case 1:
+                        fileExists = _a.sent();
+                        if (!fileExists) {
+                            console.log("file not found: " + filename);
+                            res.writeHead(404, { "Content-Type": "text/plain" });
+                            res.write("file not found: " + filename + "%s\n");
+                            return [2 /*return*/, res.end()];
+                        }
+                        console.log("sending file: " + filename);
+                        switch (path.extname(uri)) {
+                            case ".m3u8":
+                                fs.readFile(filename, function (err, contents) {
+                                    if (err) {
+                                        res.writeHead(500);
+                                        res.end();
+                                    }
+                                    else if (contents) {
+                                        res.writeHead(200, {
+                                            "Content-Type": "application/vnd.apple.mpegurl"
+                                        });
+                                        var ae = req.headers["accept-encoding"];
+                                        if (ae && ae.match(/\bgzip\b/)) {
+                                            zlib.gzip(contents, function (err, zip) {
+                                                if (err)
+                                                    throw err;
+                                                res.writeHead(200, { "content-encoding": "gzip" });
+                                                return res.end(zip);
                                             });
-                                            var ae = req.headers["accept-encoding"];
-                                            if (ae && ae.match(/\bgzip\b/)) {
-                                                zlib.gzip(contents, function (err, zip) {
-                                                    if (err)
-                                                        throw err;
-                                                    res.writeHead(200, { "content-encoding": "gzip" });
-                                                    return res.end(zip);
-                                                });
-                                            }
-                                            else {
-                                                return res.end(contents, "utf-8");
-                                            }
                                         }
                                         else {
-                                            console.log("empty playlist");
-                                            res.writeHead(500);
-                                            return res.end();
+                                            return res.end(contents, "utf-8");
                                         }
-                                    });
-                                    break;
-                                case ".ts":
-                                    res.writeHead(200, { "Content-Type": "video/MP2T" });
-                                    stream = fs.createReadStream(filename);
-                                    stream.pipe(res);
-                                    break;
-                                default:
-                                    console.log("unknown file type: " + path.extname(uri));
-                                    res.writeHead(500);
-                                    res.end();
-                            }
-                            return [2 /*return*/];
-                    }
-                });
+                                    }
+                                    else {
+                                        console.log("empty playlist");
+                                        res.writeHead(500);
+                                        return res.end();
+                                    }
+                                });
+                                break;
+                            case ".ts":
+                                res.writeHead(200, { "Content-Type": "video/MP2T" });
+                                stream = fs.createReadStream(filename);
+                                stream.pipe(res);
+                                break;
+                            default:
+                                console.log("unknown file type: " + path.extname(uri));
+                                res.writeHead(500);
+                                res.end();
+                        }
+                        return [2 /*return*/];
+                }
             });
-        });
-        server.listen(PORT);
+        }); })
+            .listen(PORT);
         // Maintain a hash of all connected sockets
         // let sockets = {},
         //   nextSocketId = 0;
