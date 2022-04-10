@@ -170,10 +170,7 @@ const startStream = async (camera: RingCamera): Promise<SipSession> => {
   return sipSession;
 };
 
-const initializeStream = async () => {
-  //
-  const ringApi = getRingClient();
-  let cameras = await ringApi.getCameras();
+const initializeStream = async (cameras: RingCamera[]) => {
   console.log("output directory: " + publicOutputDirectory);
 
   if (!(await fsExists(publicOutputDirectory))) {
@@ -197,7 +194,8 @@ const initializeStream = async () => {
     process.exit();
   } else {
     const cameras = await getRingClient().getCameras();
-    await initializeStream();
+    console.log(cameras);
+    await initializeStream(cameras);
     await startServer(cameras);
   }
 })();
