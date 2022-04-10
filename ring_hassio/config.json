@@ -14,15 +14,15 @@
     ],
     "boot":"auto",
     "ports": {
-        "3000/tcp": 3000
+        "3005/tcp": 3005
     },
     "ports_description": {
-        "3000/tcp": "The port you want to expose. You will need to expose this port in your router as well and make sure it is matching the port setting in the options."
+        "3005/tcp": "The port you want to expose. You will need to expose this port in your router as well and make sure it is matching the port setting in the options."
     },
-    "webui": "http://[HOST]:[PORT:3000]/index.html",
+    "webui": "http://[HOST]:[PORT:3005]/index.html",
     "options": {
         "ring_refresh_token": "refresh_token",
-        "port": 3000
+        "port": 3005
     },
     "schema": {
         "ring_refresh_token":"str",
