@@ -78,8 +78,10 @@ var startServer = function (cameras) { return __awaiter(void 0, void 0, void 0, 
                             res.writeHead(200, { "Content-Type": "text/html" });
                             res.write("<html><head><title>Ring Livestream</title></head><body>");
                             res.write("<h1>Welcome to your Ring Livestream!</h1>");
-                            res.write("<video width=\"352\" height=\"198\" controls autoplay src=\"public/stream.m3u8\"></video>");
-                            res.write("<br/>If you cannot see the video above open <a href=\"public/stream.m3u8\">the stream</a> in a player such as VLC.");
+                            cameras.forEach(function (camera) {
+                                res.write("<video width=\"352\" height=\"198\" controls autoplay src=\"public/" + camera.data.id + ".m3u8\"></video>");
+                                res.write("<br/>" + camera.name + " <a href=\"public/" + camera.data.id + ".m3u8\">the stream</a> in a player such as VLC.");
+                            });
                             res.write("<table><tr><th>Cameras</th><th>Camera Names</th></tr><tr>" + cameras.map(function (camera) { return "<td>" + camera.name + " | " + camera.data.id + "</td>"; }) + "</tr></table>");
                             res.end();
                             return [2 /*return*/];
@@ -209,7 +211,7 @@ var startStream = function (camera) { return __awaiter(void 0, void 0, void 0, f
     });
 }); };
 var initializeStream = function (cameras) { return __awaiter(void 0, void 0, void 0, function () {
-    var sessions, _i, cameras_1, camera, _a, _b;
+    var sessions, _i, cameras_1, camera, _a, _b, e_1;
     return __generator(this, function (_c) {
         switch (_c.label) {
             case 0:
@@ -226,19 +228,26 @@ var initializeStream = function (cameras) { return __awaiter(void 0, void 0, voi
                 _i = 0, cameras_1 = cameras;
                 _c.label = 4;
             case 4:
-                if (!(_i < cameras_1.length)) return [3 /*break*/, 7];
+                if (!(_i < cameras_1.length)) return [3 /*break*/, 9];
                 camera = cameras_1[_i];
                 console.log("camera device id: " + camera.data.device_id + " | camera name: " + camera.name + " | camera id: " + camera.data.id);
+                _c.label = 5;
+            case 5:
+                _c.trys.push([5, 7, , 8]);
                 _a = sessions;
                 _b = camera.data.id;
                 return [4 /*yield*/, startStream(camera)];
-            case 5:
-                _a[_b] = _c.sent();
-                _c.label = 6;
             case 6:
+                _a[_b] = _c.sent();
+                return [3 /*break*/, 8];
+            case 7:
+                e_1 = _c.sent();
+                console.error("Error starting: " + camera.name);
+                return [3 /*break*/, 8];
+            case 8:
                 _i++;
                 return [3 /*break*/, 4];
-            case 7: return [2 /*return*/];
+            case 9: return [2 /*return*/];
         }
     });
 }); };

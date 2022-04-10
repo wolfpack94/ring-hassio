@@ -42,12 +42,14 @@ const startServer = async (cameras: RingCamera[]) => {
         res.writeHead(200, { "Content-Type": "text/html" });
         res.write("<html><head><title>Ring Livestream</title></head><body>");
         res.write("<h1>Welcome to your Ring Livestream!</h1>");
-        res.write(
-          `<video width="352" height="198" controls autoplay src="public/stream.m3u8"></video>`
-        );
-        res.write(
-          `<br/>If you cannot see the video above open <a href="public/stream.m3u8">the stream</a> in a player such as VLC.`
-        );
+        cameras.forEach((camera) => {
+          res.write(
+            `<video width="352" height="198" controls autoplay src="public/${camera.data.id}.m3u8"></video>`
+          );
+          res.write(
+            `<br/>${camera.name} <a href="public/${camera.data.id}.m3u8">the stream</a> in a player such as VLC.`
+          );
+        });
         res.write(
           `<table><tr><th>Cameras</th><th>Camera Names</th></tr><tr>${cameras.map(
             (camera) => `<td>${camera.name} | ${camera.data.id}</td>`
@@ -183,7 +185,11 @@ const initializeStream = async (cameras: RingCamera[]) => {
     console.log(
       `camera device id: ${camera.data.device_id} | camera name: ${camera.name} | camera id: ${camera.data.id}`
     );
-    sessions[camera.data.id] = await startStream(camera);
+    try {
+      sessions[camera.data.id] = await startStream(camera);
+    } catch (e) {
+      console.error(`Error starting: ${camera.name}`);
+    }
   }
 };
 
