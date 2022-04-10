@@ -50,8 +50,8 @@ var publicOutputDirectory = path.join("public/");
 /**
  * promisified functions
  */
-var fsExists = (0, util_1.promisify)(fs.exists).bind(fs);
-var mkdir = (0, util_1.promisify)(fs.mkdir).bind(fs);
+var fsExists = util_1.promisify(fs.exists).bind(fs);
+var mkdir = util_1.promisify(fs.mkdir).bind(fs);
 var ringClient;
 var getRingClient = function () {
     if (ringClient)
@@ -66,8 +66,7 @@ var getRingClient = function () {
 var startServer = function (cameras) { return __awaiter(void 0, void 0, void 0, function () {
     var server;
     return __generator(this, function (_a) {
-        server = http
-            .createServer(function (req, res) {
+        server = http.createServer(function (req, res) {
             return __awaiter(this, void 0, void 0, function () {
                 var uri, filename, fileExists, stream;
                 return __generator(this, function (_a) {
@@ -143,8 +142,8 @@ var startServer = function (cameras) { return __awaiter(void 0, void 0, void 0, 
                     }
                 });
             });
-        })
-            .listen(PORT);
+        });
+        server.listen(PORT);
         // Maintain a hash of all connected sockets
         // let sockets = {},
         //   nextSocketId = 0;
@@ -233,6 +232,7 @@ var initializeStream = function () { return __awaiter(void 0, void 0, void 0, fu
             case 5:
                 if (!(_i < cameras_1.length)) return [3 /*break*/, 8];
                 camera = cameras_1[_i];
+                console.log("camera device id: " + camera.data.device_id + " | camera name: " + camera.name + " | camera id: " + camera.data.id);
                 _a = sessions;
                 _b = camera.data.id;
                 return [4 /*yield*/, startStream(camera)];

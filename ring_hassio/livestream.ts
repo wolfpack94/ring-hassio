@@ -129,6 +129,7 @@ const startServer = async (cameras: RingCamera[]) => {
 };
 
 const startStream = async (camera: RingCamera): Promise<SipSession> => {
+  console.log(camera);
   const sipSession = await camera.streamVideo({
     output: [
       "-preset",
