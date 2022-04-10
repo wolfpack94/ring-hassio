@@ -40,203 +40,232 @@ exports.__esModule = true;
 require("dotenv/config");
 var ring_client_api_1 = require("ring-client-api");
 var util_1 = require("util");
-var fs = require('fs'), path = require('path'), http = require('http'), url = require('url'), zlib = require('zlib');
+var fs = require("fs");
+var path = require("path");
+var http = require("http");
+var url = require("url");
+var zlib = require("zlib");
 var PORT = process.env.RING_PORT;
-//
-var CAMERA_NAME = process.env.CAMERA_NAME;
-var chosenCamera = CAMERA_NAME;
+var publicOutputDirectory = path.join("public/");
 /**
- * This example creates an hls stream which is viewable in a browser
- * It also starts web app to view the stream at http://localhost:PORT
- **/
-function startStream() {
-    return __awaiter(this, void 0, void 0, function () {
-        ///////////////
-        function getCamera() {
+ * promisified functions
+ */
+var fsExists = (0, util_1.promisify)(fs.exists).bind(fs);
+var mkdir = (0, util_1.promisify)(fs.mkdir).bind(fs);
+var ringClient;
+var getRingClient = function () {
+    if (ringClient)
+        return ringClient;
+    ringClient = new ring_client_api_1.RingApi({
+        // Refresh token is used when 2fa is on
+        refreshToken: process.env.RING_REFRESH_TOKEN,
+        debug: true
+    });
+    return ringClient;
+};
+var startServer = function (cameras) { return __awaiter(void 0, void 0, void 0, function () {
+    var server;
+    return __generator(this, function (_a) {
+        server = http
+            .createServer(function (req, res) {
             return __awaiter(this, void 0, void 0, function () {
-                var cameras, camera, i, cameraName;
+                var uri, filename, fileExists, stream;
                 return __generator(this, function (_a) {
                     switch (_a.label) {
-                        case 0: return [4 /*yield*/, ringApi.getCameras()];
-                        case 1:
-                            cameras = _a.sent();
-                            //
-                            if (chosenCamera) {
-                                for (i = 0; i < cameras.length; i++) {
-                                    cameraName = cameras[i].initialData.description;
-                                    console.log("Checking If " + cameraName + " Is the same as the camera we are looking for (" + chosenCamera + ")");
-                                    if (chosenCamera == cameraName) {
-                                        camera = cameras[i];
-                                        console.log("Matched " + cameraName);
-                                    }
-                                }
-                            }
-                            else {
-                                camera = cameras[0];
-                            }
-                            //
-                            if (!cameras) {
-                                console.log('No cameras found');
+                        case 0:
+                            uri = url.parse(req.url).pathname;
+                            console.log("requested uri: " + uri);
+                            // If Accessing The Main Page
+                            if (uri == "/index.html" || uri == "/") {
+                                res.writeHead(200, { "Content-Type": "text/html" });
+                                res.write("<html><head><title>Ring Livestream</title></head><body>");
+                                res.write("<h1>Welcome to your Ring Livestream!</h1>");
+                                res.write("<video width=\"352\" height=\"198\" controls autoplay src=\"public/stream.m3u8\"></video>");
+                                res.write("<br/>If you cannot see the video above open <a href=\"public/stream.m3u8\">the stream</a> in a player such as VLC.");
+                                res.write("<table><tr><th>Cameras</th><th>Camera Names</th></tr><tr>" + cameras.map(function (camera) { return "<td>" + camera.name + " | " + camera.data.id + "</td>"; }) + "</tr></table>");
+                                res.end();
                                 return [2 /*return*/];
                             }
-                            //
-                            return [2 /*return*/, camera];
+                            filename = path.join("./", uri);
+                            console.log("mapped filename: " + filename);
+                            return [4 /*yield*/, fsExists(filename)];
+                        case 1:
+                            fileExists = _a.sent();
+                            if (!fileExists) {
+                                console.log("file not found: " + filename);
+                                res.writeHead(404, { "Content-Type": "text/plain" });
+                                res.write("file not found: " + filename + "%s\n");
+                                return [2 /*return*/, res.end()];
+                            }
+                            console.log("sending file: " + filename);
+                            switch (path.extname(uri)) {
+                                case ".m3u8":
+                                    fs.readFile(filename, function (err, contents) {
+                                        if (err) {
+                                            res.writeHead(500);
+                                            res.end();
+                                        }
+                                        else if (contents) {
+                                            res.writeHead(200, {
+                                                "Content-Type": "application/vnd.apple.mpegurl"
+                                            });
+                                            var ae = req.headers["accept-encoding"];
+                                            if (ae && ae.match(/\bgzip\b/)) {
+                                                zlib.gzip(contents, function (err, zip) {
+                                                    if (err)
+                                                        throw err;
+                                                    res.writeHead(200, { "content-encoding": "gzip" });
+                                                    return res.end(zip);
+                                                });
+                                            }
+                                            else {
+                                                return res.end(contents, "utf-8");
+                                            }
+                                        }
+                                        else {
+                                            console.log("empty playlist");
+                                            res.writeHead(500);
+                                            return res.end();
+                                        }
+                                    });
+                                    break;
+                                case ".ts":
+                                    res.writeHead(200, { "Content-Type": "video/MP2T" });
+                                    stream = fs.createReadStream(filename);
+                                    stream.pipe(res);
+                                    break;
+                                default:
+                                    console.log("unknown file type: " + path.extname(uri));
+                                    res.writeHead(500);
+                                    res.end();
+                            }
+                            return [2 /*return*/];
                     }
                 });
             });
-        }
-        var ringApi, camera, publicOutputDirectory, server, sockets, nextSocketId, sipSession;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0:
-                    ringApi = new ring_client_api_1.RingApi({
-                        // Refresh token is used when 2fa is on
-                        refreshToken: process.env.RING_REFRESH_TOKEN,
-                        debug: true
-                    });
-                    return [4 /*yield*/, getCamera()
-                        ///////////////
-                    ];
-                case 1:
-                    camera = _a.sent();
-                    publicOutputDirectory = path.join('public/');
-                    console.log('output directory: ' + publicOutputDirectory);
-                    server = http.createServer(function (req, res) {
-                        // Get URL
-                        var uri = url.parse(req.url).pathname;
-                        console.log('requested uri: ' + uri);
-                        // If Accessing The Main Page
-                        if (uri == '/index.html' || uri == '/') {
-                            res.writeHead(200, { 'Content-Type': 'text/html' });
-                            res.write('<html><head><title>Ring Livestream</title></head><body>');
-                            res.write('<h1>Welcome to your Ring Livestream!</h1>');
-                            res.write("<video width=\"352\" height=\"198\" controls autoplay src=\"public/stream.m3u8\"></video>");
-                            res.write("<br/>If you cannot see the video above open <a href=\"public/stream.m3u8\">the stream</a> in a player such as VLC.");
-                            res.end();
-                            return;
-                        }
-                        var filename = path.join("./", uri);
-                        console.log('mapped filename: ' + filename);
-                        fs.exists(filename, function (exists) {
-                            if (!exists) {
-                                console.log('file not found: ' + filename);
-                                res.writeHead(404, { 'Content-Type': 'text/plain' });
-                                res.write('file not found: %s\n', filename);
-                                res.end();
-                            }
-                            else {
-                                console.log('sending file: ' + filename);
-                                switch (path.extname(uri)) {
-                                    case '.m3u8':
-                                        fs.readFile(filename, function (err, contents) {
-                                            if (err) {
-                                                res.writeHead(500);
-                                                res.end();
-                                            }
-                                            else if (contents) {
-                                                res.writeHead(200, { 'Content-Type': 'application/vnd.apple.mpegurl' });
-                                                var ae = req.headers['accept-encoding'];
-                                                if (ae && ae.match(/\bgzip\b/)) {
-                                                    zlib.gzip(contents, function (err, zip) {
-                                                        if (err)
-                                                            throw err;
-                                                        res.writeHead(200, { 'content-encoding': 'gzip' });
-                                                        res.end(zip);
-                                                    });
-                                                }
-                                                else {
-                                                    res.end(contents, 'utf-8');
-                                                }
-                                            }
-                                            else {
-                                                console.log('empty playlist');
-                                                res.writeHead(500);
-                                                res.end();
-                                            }
-                                        });
-                                        break;
-                                    case '.ts':
-                                        res.writeHead(200, { 'Content-Type': 'video/MP2T' });
-                                        var stream = fs.createReadStream(filename, { bufferSize: 64 * 1024 });
-                                        stream.pipe(res);
-                                        break;
-                                    default:
-                                        console.log('unknown file type: ' +
-                                            path.extname(uri));
-                                        res.writeHead(500);
-                                        res.end();
-                                }
-                            }
-                        });
-                    }).listen(PORT);
-                    sockets = {}, nextSocketId = 0;
-                    server.on('connection', function (socket) {
-                        // Add a newly connected socket
-                        var socketId = nextSocketId++;
-                        sockets[socketId] = socket;
-                        console.log('socket', socketId, 'opened');
-                        // Remove the socket when it closes
-                        socket.on('close', function () {
-                            console.log('socket', socketId, 'closed');
-                            delete sockets[socketId];
-                        });
-                        // Extend socket lifetime for demo purposes
-                        socket.setTimeout(4000);
-                    });
-                    console.log('Started server, listening on port ' + PORT + '.');
-                    return [4 /*yield*/, util_1.promisify(fs.exists)(publicOutputDirectory)];
-                case 2:
-                    if (!!(_a.sent())) return [3 /*break*/, 4];
-                    return [4 /*yield*/, util_1.promisify(fs.mkdir)(publicOutputDirectory)];
-                case 3:
-                    _a.sent();
-                    _a.label = 4;
-                case 4: return [4 /*yield*/, camera.streamVideo({
-                        output: [
-                            '-preset',
-                            'veryfast',
-                            '-g',
-                            '25',
-                            '-sc_threshold',
-                            '0',
-                            '-f',
-                            'hls',
-                            '-hls_time',
-                            '2',
-                            '-hls_list_size',
-                            '6',
-                            '-hls_flags',
-                            'delete_segments',
-                            path.join(publicOutputDirectory, 'stream.m3u8')
-                        ]
-                    })];
-                case 5:
-                    sipSession = _a.sent();
-                    sipSession.onCallEnded.subscribe(function () {
-                        console.log('Call has ended');
-                        server.close(function () { console.log('Server closed!'); });
-                        // Destroy all open sockets
-                        for (var socketId in sockets) {
-                            console.log('socket', socketId, 'destroyed');
-                            sockets[socketId].destroy();
-                        }
-                        //app.stop()
-                        console.log('Restarting server');
-                        startStream();
-                    });
-                    setTimeout(function () {
-                        console.log('Stopping call...');
-                        sipSession.stop();
-                    }, 10 * 60 * 1000); // 10*60*1000 Stop after 10 minutes.
-                    return [2 /*return*/];
-            }
-        });
+        })
+            .listen(PORT);
+        // Maintain a hash of all connected sockets
+        // let sockets = {},
+        //   nextSocketId = 0;
+        // server.on("connection", function (socket) {
+        //   // Add a newly connected socket
+        //   let socketId = nextSocketId++;
+        //   sockets[socketId] = socket;
+        //   console.log("socket", socketId, "opened");
+        //   // Remove the socket when it closes
+        //   socket.on("close", function () {
+        //     console.log("socket", socketId, "closed");
+        //     delete sockets[socketId];
+        //   });
+        //   // Extend socket lifetime for demo purposes
+        //   socket.setTimeout(4000);
+        // });
+        console.log("Started server, listening on port " + PORT + ".");
+        return [2 /*return*/];
     });
-}
-if (!('RING_REFRESH_TOKEN' in process.env) || !('RING_PORT' in process.env) || !('CAMERA_NAME' in process.env)) {
-    console.log('Missing environment variables. Check RING_REFRESH_TOKEN, RING_PORT and CAMERA_NAME are set.');
-    process.exit();
-}
-else {
-    startStream();
-}
+}); };
+var startStream = function (camera) { return __awaiter(void 0, void 0, void 0, function () {
+    var sipSession;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0: return [4 /*yield*/, camera.streamVideo({
+                    output: [
+                        "-preset",
+                        "veryfast",
+                        "-g",
+                        "25",
+                        "-sc_threshold",
+                        "0",
+                        "-f",
+                        "hls",
+                        "-hls_time",
+                        "2",
+                        "-hls_list_size",
+                        "6",
+                        "-hls_flags",
+                        "delete_segments",
+                        path.join(publicOutputDirectory, camera.data.id + ".m3u8"),
+                    ]
+                })];
+            case 1:
+                sipSession = _a.sent();
+                sipSession.onCallEnded.subscribe(function () {
+                    console.log("Call has ended");
+                    // Destroy all open sockets
+                    // for (let socketId in sockets) {
+                    //   console.log("socket", socketId, "destroyed");
+                    //   sockets[socketId].destroy();
+                    // }
+                    //app.stop()
+                    console.log("Restarting server");
+                    startStream(camera);
+                });
+                setTimeout(function () {
+                    console.log("Stopping call...");
+                    sipSession.stop();
+                }, 10 * 60 * 1000); // 10*60*1000 Stop after 10 minutes.
+                return [2 /*return*/, sipSession];
+        }
+    });
+}); };
+var initializeStream = function () { return __awaiter(void 0, void 0, void 0, function () {
+    var ringApi, cameras, sessions, _i, cameras_1, camera, _a, _b;
+    return __generator(this, function (_c) {
+        switch (_c.label) {
+            case 0:
+                ringApi = getRingClient();
+                return [4 /*yield*/, ringApi.getCameras()];
+            case 1:
+                cameras = _c.sent();
+                console.log("output directory: " + publicOutputDirectory);
+                return [4 /*yield*/, fsExists(publicOutputDirectory)];
+            case 2:
+                if (!!(_c.sent())) return [3 /*break*/, 4];
+                return [4 /*yield*/, mkdir(publicOutputDirectory)];
+            case 3:
+                _c.sent();
+                _c.label = 4;
+            case 4:
+                sessions = {};
+                _i = 0, cameras_1 = cameras;
+                _c.label = 5;
+            case 5:
+                if (!(_i < cameras_1.length)) return [3 /*break*/, 8];
+                camera = cameras_1[_i];
+                _a = sessions;
+                _b = camera.data.id;
+                return [4 /*yield*/, startStream(camera)];
+            case 6:
+                _a[_b] = _c.sent();
+                _c.label = 7;
+            case 7:
+                _i++;
+                return [3 /*break*/, 5];
+            case 8: return [2 /*return*/];
+        }
+    });
+}); };
+(function () { return __awaiter(void 0, void 0, void 0, function () {
+    var cameras;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                if (!(!("RING_REFRESH_TOKEN" in process.env) || !("RING_PORT" in process.env))) return [3 /*break*/, 1];
+                console.log("Missing environment letiables. Check RING_REFRESH_TOKEN, RING_PORT are set.");
+                process.exit();
+                return [3 /*break*/, 5];
+            case 1: return [4 /*yield*/, getRingClient().getCameras()];
+            case 2:
+                cameras = _a.sent();
+                return [4 /*yield*/, initializeStream()];
+            case 3:
+                _a.sent();
+                return [4 /*yield*/, startServer(cameras)];
+            case 4:
+                _a.sent();
+                _a.label = 5;
+            case 5: return [2 /*return*/];
+        }
+    });
+}); })();

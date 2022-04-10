@@ -5,7 +5,8 @@
     "author": "Jeroen ter Heerdt",
     "main": "livestream.js",
     "scripts": {
-        "start": "node livestream.js"
+        "start": "node livestream.js",
+        "build": "tsc livestream.ts"
     },
     "dependencies": {
         "dotenv-extended": "^2.8.0",

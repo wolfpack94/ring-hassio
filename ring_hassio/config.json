@@ -22,12 +22,10 @@
     "webui": "http://[HOST]:[PORT:3000]/index.html",
     "options": {
         "ring_refresh_token": "refresh_token",
-        "camera_name": "Front Door",
         "port": 3000
     },
     "schema": {
         "ring_refresh_token":"str",
-        "camera_name": "str",
         "port":"port"
     },
     "map": [
