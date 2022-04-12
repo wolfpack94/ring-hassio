@@ -64,8 +64,9 @@ var getRingClient = function () {
     return ringClient;
 };
 var startServer = function (cameras) { return __awaiter(void 0, void 0, void 0, function () {
+    var server, sockets, nextSocketId;
     return __generator(this, function (_a) {
-        http
+        server = http
             .createServer(function (req, res) { return __awaiter(void 0, void 0, void 0, function () {
             var uri, filename, fileExists, stream;
             return __generator(this, function (_a) {
@@ -144,22 +145,20 @@ var startServer = function (cameras) { return __awaiter(void 0, void 0, void 0, 
             });
         }); })
             .listen(PORT);
-        // Maintain a hash of all connected sockets
-        // let sockets = {},
-        //   nextSocketId = 0;
-        // server.on("connection", function (socket) {
-        //   // Add a newly connected socket
-        //   let socketId = nextSocketId++;
-        //   sockets[socketId] = socket;
-        //   console.log("socket", socketId, "opened");
-        //   // Remove the socket when it closes
-        //   socket.on("close", function () {
-        //     console.log("socket", socketId, "closed");
-        //     delete sockets[socketId];
-        //   });
-        //   // Extend socket lifetime for demo purposes
-        //   socket.setTimeout(4000);
-        // });
+        sockets = {}, nextSocketId = 0;
+        server.on("connection", function (socket) {
+            // Add a newly connected socket
+            var socketId = nextSocketId++;
+            sockets[socketId] = socket;
+            console.log("socket", socketId, "opened");
+            // Remove the socket when it closes
+            socket.on("close", function () {
+                console.log("socket", socketId, "closed");
+                delete sockets[socketId];
+            });
+            // Extend socket lifetime for demo purposes
+            socket.setTimeout(4000);
+        });
         console.log("Started server, listening on port " + PORT + ".");
         return [2 /*return*/];
     });

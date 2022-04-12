@@ -32,7 +32,7 @@ const getRingClient = () => {
 };
 
 const startServer = async (cameras: RingCamera[]) => {
-  http
+  const server = http
     .createServer(async (req, res) => {
       // Get URL
       let uri = url.parse(req.url).pathname;
@@ -111,23 +111,23 @@ const startServer = async (cameras: RingCamera[]) => {
     .listen(PORT);
 
   // Maintain a hash of all connected sockets
-  // let sockets = {},
-  //   nextSocketId = 0;
-  // server.on("connection", function (socket) {
-  //   // Add a newly connected socket
-  //   let socketId = nextSocketId++;
-  //   sockets[socketId] = socket;
-  //   console.log("socket", socketId, "opened");
+  let sockets = {},
+    nextSocketId = 0;
+  server.on("connection", function (socket) {
+    // Add a newly connected socket
+    let socketId = nextSocketId++;
+    sockets[socketId] = socket;
+    console.log("socket", socketId, "opened");
 
-  //   // Remove the socket when it closes
-  //   socket.on("close", function () {
-  //     console.log("socket", socketId, "closed");
-  //     delete sockets[socketId];
-  //   });
+    // Remove the socket when it closes
+    socket.on("close", function () {
+      console.log("socket", socketId, "closed");
+      delete sockets[socketId];
+    });
 
-  //   // Extend socket lifetime for demo purposes
-  //   socket.setTimeout(4000);
-  // });
+    // Extend socket lifetime for demo purposes
+    socket.setTimeout(4000);
+  });
   console.log("Started server, listening on port " + PORT + ".");
 };
 
